@@ -26,7 +26,7 @@ func (r *BotRepository) GetProductList(categories ...string) ([]ShopProduct, err
 	if err != nil {
 		return []ShopProduct{}, err
 	}
-	products := make([]ShopProduct, len(persistedProducts))
+	products := make([]ShopProduct, 0)
 	for _, m := range persistedProducts {
 		b, _ := json.Marshal(m)
 		var p ShopProduct
