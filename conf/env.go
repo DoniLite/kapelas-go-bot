@@ -4,8 +4,11 @@ import (
 	"log"
 	"net"
 	"os"
+	"path"
 	"strconv"
 	"strings"
+
+	"github.com/joho/godotenv"
 )
 
 type EnvKey string
@@ -48,6 +51,17 @@ type Env struct {
 }
 
 func (e *Env) Load() {
+	cwd, err := os.Getwd()
+	if err != nil {
+		log.Fatal("Error getting current working directory, make sure to run the bot from the project root directory")
+	}
+	DEFAULT_ENV_PATH := path.Join(cwd, "./.env")
+	log.Printf("Loading environment variables from: %s", DEFAULT_ENV_PATH)
+	// add your custom env file here to override default env variables
+	err = godotenv.Load(DEFAULT_ENV_PATH)
+	if err != nil {
+		log.Fatal("Error loading .env file")
+	}
 	botToken := os.Getenv(BOT_TOKEN.String())
 	if botToken == "" {
 		log.Printf("WARN! %s not set ", BOT_TOKEN)
