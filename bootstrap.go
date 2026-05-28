@@ -3,15 +3,12 @@ package main
 import (
 	"context"
 	"log"
-	"path"
 
 	"github.com/Arnel7/kappelas-sdk-go"
 	"github.com/DoniLite/kapelas-bot/conf"
 	"github.com/DoniLite/kapelas-bot/handlers"
+	botLib "github.com/DoniLite/kapelas-bot/handlers/bot"
 	"github.com/gin-gonic/gin"
-	"github.com/joho/godotenv"
-
-	"os"
 )
 
 var (
@@ -21,17 +18,7 @@ var (
 )
 
 func Bootstrap() {
-	cwd, err := os.Getwd()
 	ctx := context.Background()
-	if err != nil {
-		log.Fatal("Error getting current working directory, make sure to run the bot from the project root directory")
-	}
-	DEFAULT_ENV_PATH := path.Join(cwd, "./.env")
-	// add your custom env file here to override default env variables
-	err = godotenv.Load(DEFAULT_ENV_PATH)
-	if err != nil {
-		log.Fatal("Error loading .env file")
-	}
 
 	env := conf.GetEnv()
 
@@ -57,10 +44,9 @@ func Bootstrap() {
 	isDev := env.GetBool(conf.BOT_IS_DEVELOPMENT)
 	if isDev {
 		log.Printf("Running in dev mode, starting the channel to listen for bot updates...")
-		go func() {
-			bot.Start()
-			select {}
-		}()
+		botLib.SeedProducts()
+		bot.Start()
+		select {}
 	}
 	router.Run(":" + env.GetString(conf.SERVER_PORT))
 }
