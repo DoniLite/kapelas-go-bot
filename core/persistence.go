@@ -22,6 +22,7 @@ const (
 	CollectionProducts          Collection = "products"
 	CollectionOrders            Collection = "orders"
 	CollectionProductCategories Collection = "product_categories"
+	CollectionBotState          Collection = "bot_state"
 )
 
 func GetStore() *store.JSONStore {

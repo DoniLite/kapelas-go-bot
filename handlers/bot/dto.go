@@ -13,6 +13,7 @@ const (
 type ShopOrder struct {
 	ID         string      `json:"id"`
 	UserID     string      `json:"user_id"`
+	ChatID     int64       `json:"chat_id"`
 	ProductID  string      `json:"product_id"`
 	Quantity   int         `json:"quantity,omitempty"`
 	TotalPrice float64     `json:"total_price"`
@@ -32,4 +33,11 @@ type ShopCategory struct {
 	ID       string        `json:"id"`
 	Name     string        `json:"name"`
 	Products []ShopProduct `json:"products"`
+}
+
+type BotStateItem struct {
+	ID      string `json:"id"`
+	Value   string `json:"value"`
+	ChatID  int64  `json:"chat_id,omitempty"`
+	Message int64  `json:"message,omitempty"`
 }
