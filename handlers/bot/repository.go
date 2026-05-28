@@ -61,6 +61,37 @@ func (r *BotRepository) UpdateOrder(order ShopOrder) error {
 	return core.GetStore().Upsert(core.CollectionOrders.String(), order.ID, order)
 }
 
+func (r *BotRepository) GetOrders() ([]ShopOrder, error) {
+	var orders []ShopOrder
+	persistedOrders, err := core.GetStore().List(core.CollectionOrders.String())
+	if err != nil {
+		return []ShopOrder{}, err
+	}
+	for _, m := range persistedOrders {
+		b, _ := json.Marshal(m)
+		var o ShopOrder
+		if err := json.Unmarshal(b, &o); err != nil {
+			continue
+		}
+		orders = append(orders, o)
+	}
+	return orders, nil
+}
+
+func (r *BotRepository) GetOrdersByUser(userID string) ([]ShopOrder, error) {
+	orders, err := r.GetOrders()
+	if err != nil {
+		return []ShopOrder{}, err
+	}
+	var filtered []ShopOrder
+	for _, order := range orders {
+		if order.UserID == userID {
+			filtered = append(filtered, order)
+		}
+	}
+	return filtered, nil
+}
+
 func (r *BotRepository) GetCategories() ([]ShopCategory, error) {
 	var categories []ShopCategory
 	persistedCategories, err := core.GetStore().List(core.CollectionProductCategories.String())
@@ -130,4 +161,29 @@ func (r *BotRepository) CreateProduct(product ShopProduct) error {
 
 func (r *BotRepository) UpdateProduct(product ShopProduct) error {
 	return core.GetStore().Upsert(core.CollectionProducts.String(), product.ID, product)
+}
+
+func (r *BotRepository) UpdateCategory(category ShopCategory) error {
+	return core.GetStore().Upsert(core.CollectionProductCategories.String(), category.ID, category)
+}
+
+func (r *BotRepository) DeleteProduct(productID string) error {
+	return core.GetStore().Delete(core.CollectionProducts.String(), productID)
+}
+
+func (r *BotRepository) DeleteCategory(categoryID string) error {
+	return core.GetStore().Delete(core.CollectionProductCategories.String(), categoryID)
+}
+
+func (r *BotRepository) GetState(id string) (*BotStateItem, error) {
+	var item BotStateItem
+	err := core.GetStore().Get(core.CollectionBotState.String(), id, &item)
+	if err != nil {
+		return nil, err
+	}
+	return &item, nil
+}
+
+func (r *BotRepository) SetState(item BotStateItem) error {
+	return core.GetStore().Upsert(core.CollectionBotState.String(), item.ID, item)
 }

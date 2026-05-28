@@ -7,6 +7,7 @@ import (
 	"log"
 	"net/http"
 	"net/url"
+	"strconv"
 	"strings"
 
 	"github.com/Arnel7/kappelas-sdk-go"
@@ -28,6 +29,8 @@ type BotCallbackQuery struct {
 	ProductId  string
 	CategoryId string
 	OrderId    string
+	Page       int
+	Quantity   int
 }
 
 func HandleBotWebHook(deps *RouterDeps) gin.HandlerFunc {
@@ -41,19 +44,82 @@ func HandleBotWebHook(deps *RouterDeps) gin.HandlerFunc {
 func BuildRouter(deps *RouterDeps) *gin.Engine {
 	ctx := context.Background()
 	botService := bot.NewBotService(deps.Bot, bot.NewBotRepository())
+	if token, err := botService.EnsureOwnerAccessToken(); err == nil {
+		log.Printf("Owner access token ready: %s", token)
+	}
 	deps.Bot.OnMessage(func(m *kappelas.Message) {
-		if bot.StartCommand.Match(*m.Text) {
-			bot.HandleStartCommand(deps.Bot, botService, m.ChatID, *m.SenderName)
+		if m.Text == nil {
+			deps.Bot.Messages.Send(ctx, kappelas.SendMessageParams{
+				ChatID: m.ChatID,
+				Text:   core.STATIC_FALLBACK_TEXT,
+			})
 			return
 		}
-		if bot.HelpCommand.Match(*m.Text) {
+
+		command := bot.ParseCommand(*m.Text)
+		args := bot.CommandArgs(*m.Text)
+		userID := userIDFromMessage(m)
+		isAdmin := botService.IsOwnerChat(m.ChatID)
+		switch command {
+		case bot.StartCommand:
+			bot.HandleStartCommand(deps.Bot, botService, m.ChatID, safeString(m.SenderName))
+			return
+		case bot.HelpCommand:
 			bot.HandleHelpCommand(deps.Bot, m.ChatID)
 			return
-		}
-		if bot.ListProductsCommand.Match(*m.Text) {
+		case bot.ListProductsCommand:
 			bot.HandleListProducts(deps.Bot, botService, m.ChatID, map[string]string{})
 			return
+		case bot.ViewProductsCommand:
+			bot.HandleViewProduct(deps.Bot, botService, m.ChatID, map[string]string{
+				"product": args,
+			})
+			return
+		case bot.PlaceOrderCommand:
+			productID, quantity := parsePlaceOrderArgs(args)
+			bot.HandlePlaceOrder(deps.Bot, botService, m.ChatID, userID, map[string]string{
+				"product":  productID,
+				"quantity": strconv.Itoa(quantity),
+			})
+			return
+		case bot.MyOrdersCommand:
+			bot.HandleMyOrders(deps.Bot, botService, m.ChatID, userID)
+			return
+		case bot.RequestOwnerAccessCommand:
+			bot.HandleRequestOwnerAccess(deps.Bot, botService, m.ChatID, args)
+			return
+		case bot.OwnerAccessTokenCommand:
+			bot.HandleOwnerAccessToken(deps.Bot, botService, m.ChatID, isAdmin)
+			return
+		case bot.AdminViewCategoriesCommand:
+			bot.HandleAdminViewCategories(deps.Bot, botService, m.ChatID, isAdmin)
+			return
+		case bot.AddCategoryCommand:
+			bot.HandleAddCategory(deps.Bot, botService, m.ChatID, isAdmin, args)
+			return
+		case bot.UpdateCategoryCommand:
+			bot.HandleUpdateCategory(deps.Bot, botService, m.ChatID, isAdmin, args)
+			return
+		case bot.DeleteCategoryCommand:
+			bot.HandleDeleteCategory(deps.Bot, botService, m.ChatID, isAdmin, args)
+			return
+		case bot.AddProductCommand:
+			bot.HandleAddProduct(deps.Bot, botService, m.ChatID, isAdmin, args)
+			return
+		case bot.UpdateProductCommand:
+			bot.HandleUpdateProduct(deps.Bot, botService, m.ChatID, isAdmin, args)
+			return
+		case bot.DeleteProductCommand:
+			bot.HandleDeleteProduct(deps.Bot, botService, m.ChatID, isAdmin, args)
+			return
+		case bot.AdminListOrdersCommand:
+			bot.HandleAdminListOrders(deps.Bot, botService, m.ChatID, isAdmin)
+			return
+		case bot.AdminUpdateOrderStatusCommand:
+			bot.HandleAdminUpdateOrderStatus(deps.Bot, botService, m.ChatID, isAdmin, args)
+			return
 		}
+
 		deps.Bot.Messages.Send(ctx, kappelas.SendMessageParams{
 			ChatID: m.ChatID,
 			Text:   core.STATIC_FALLBACK_TEXT,
@@ -69,12 +135,14 @@ func BuildRouter(deps *RouterDeps) *gin.Engine {
 			})
 			return
 		}
-		log.Printf("Received callback query: command=%s, userId=%s, productId=%s, categoryId=%s, orderId=%s",
-			query.Command, query.UserId, query.ProductId, query.CategoryId, query.OrderId)
+		log.Printf("Received callback query: command=%s, userId=%s, productId=%s, categoryId=%s, orderId=%s, page=%d",
+			query.Command, query.UserId, query.ProductId, query.CategoryId, query.OrderId, query.Page)
+		isAdmin := botService.IsOwnerChat(cq.ChatID)
+		userID := userIDFromCallback(cq)
 		switch query.Command {
 		case bot.StartCommand:
 			{
-				bot.HandleStartCommand(deps.Bot, botService, cq.ChatID, *cq.SenderUsername)
+				bot.HandleStartCommand(deps.Bot, botService, cq.ChatID, safeString(cq.SenderUsername))
 				break
 			}
 		case bot.HelpCommand:
@@ -86,7 +154,43 @@ func BuildRouter(deps *RouterDeps) *gin.Engine {
 			{
 				bot.HandleListProducts(deps.Bot, botService, cq.ChatID, map[string]string{
 					"category": query.CategoryId,
+					"page":     strconv.Itoa(query.Page),
 				})
+				break
+			}
+		case bot.ViewProductsCommand:
+			{
+				bot.HandleViewProduct(deps.Bot, botService, cq.ChatID, map[string]string{
+					"product": query.ProductId,
+				})
+				break
+			}
+		case bot.PlaceOrderCommand:
+			{
+				bot.HandlePlaceOrder(deps.Bot, botService, cq.ChatID, userID, map[string]string{
+					"product":  query.ProductId,
+					"quantity": strconv.Itoa(query.Quantity),
+				})
+				break
+			}
+		case bot.MyOrdersCommand:
+			{
+				bot.HandleMyOrders(deps.Bot, botService, cq.ChatID, userID)
+				break
+			}
+		case bot.AdminViewCategoriesCommand:
+			{
+				bot.HandleAdminViewCategories(deps.Bot, botService, cq.ChatID, isAdmin)
+				break
+			}
+		case bot.AdminListOrdersCommand:
+			{
+				bot.HandleAdminListOrders(deps.Bot, botService, cq.ChatID, isAdmin)
+				break
+			}
+		case bot.OwnerAccessTokenCommand:
+			{
+				bot.HandleOwnerAccessToken(deps.Bot, botService, cq.ChatID, isAdmin)
 				break
 			}
 		default:
@@ -142,13 +246,63 @@ func parseCallbackQueryData(dataAsURLParts string) (*BotCallbackQuery, error) {
 		return ""
 	}
 
+	page, err := strconv.Atoi(getFirst("page", "p"))
+	if err != nil || page < 1 {
+		page = 1
+	}
+	quantity, err := strconv.Atoi(getFirst("quantity", "qty", "q"))
+	if err != nil || quantity < 1 {
+		quantity = 1
+	}
+
 	b := &BotCallbackQuery{
 		Command:    bot.Command(cmdPart),
 		UserId:     getFirst("user", "user_id", "userid", "uid"),
 		ProductId:  getFirst("product", "product_id", "productid"),
 		CategoryId: getFirst("category", "category_id", "categoryid"),
 		OrderId:    getFirst("order", "order_id", "orderid"),
+		Page:       page,
+		Quantity:   quantity,
 	}
 
 	return b, nil
+}
+
+func safeString(value *string) string {
+	if value == nil {
+		return ""
+	}
+	return *value
+}
+
+func parsePlaceOrderArgs(args string) (string, int) {
+	parts := strings.Fields(args)
+	if len(parts) == 0 {
+		return "", 1
+	}
+	quantity := 1
+	if len(parts) > 1 {
+		if value, err := strconv.Atoi(parts[1]); err == nil && value > 0 {
+			quantity = value
+		}
+	}
+	return parts[0], quantity
+}
+
+func userIDFromMessage(m *kappelas.Message) string {
+	if m.SenderID != nil && strings.TrimSpace(*m.SenderID) != "" {
+		return *m.SenderID
+	}
+	return chatUserID(m.ChatID)
+}
+
+func userIDFromCallback(cq *kappelas.CallbackQuery) string {
+	if strings.TrimSpace(cq.SenderID) != "" {
+		return cq.SenderID
+	}
+	return chatUserID(cq.ChatID)
+}
+
+func chatUserID(chatID int64) string {
+	return fmt.Sprintf("chat:%d", chatID)
 }
