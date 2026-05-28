@@ -115,6 +115,15 @@ func (r *BotRepository) GetProductByID(productID string) (*ShopProduct, error) {
 	return &product, nil
 }
 
+func (r *BotRepository) GetProductCategory(categoryId string) (*ShopCategory, error) {
+	var category ShopCategory
+	err := core.GetStore().Get(core.CollectionProductCategories.String(), categoryId, &category)
+	if err != nil {
+		return nil, err
+	}
+	return &category, nil
+}
+
 func (r *BotRepository) CreateProduct(product ShopProduct) error {
 	return core.GetStore().Create(core.CollectionProducts.String(), product.ID, product)
 }
