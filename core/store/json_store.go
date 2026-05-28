@@ -9,6 +9,7 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"strings"
 	"sync"
 
 	"github.com/DoniLite/kapelas-bot/conf"
@@ -32,6 +33,9 @@ func NewJSONStore(baseDir string) (*JSONStore, error) {
 		if e != nil && e.GetBool(conf.BOT_IS_DEVELOPMENT) {
 			log.Printf("Running in development mode, using local data directory")
 			baseDir = "./data_dev"
+		} else if strings.HasSuffix(os.Args[0], ".test") {
+			log.Printf("Running in test mode, using temporary data directory")
+			baseDir = filepath.Join(os.TempDir(), "kappelas-go-bot", "data")
 		} else {
 			log.Printf("Running in production mode, using user config directory for data storage")
 			dir, err := os.UserConfigDir()
