@@ -1,6 +1,7 @@
 package conf
 
 import (
+	"errors"
 	"log"
 	"net"
 	"os"
@@ -60,7 +61,11 @@ func (e *Env) Load() {
 	// add your custom env file here to override default env variables
 	err = godotenv.Load(DEFAULT_ENV_PATH)
 	if err != nil {
-		log.Fatal("Error loading .env file")
+		if errors.Is(err, os.ErrNotExist) {
+			log.Printf("No .env file found, using environment variables")
+		} else {
+			log.Fatal("Error loading .env file")
+		}
 	}
 	botToken := os.Getenv(BOT_TOKEN.String())
 	if botToken == "" {
