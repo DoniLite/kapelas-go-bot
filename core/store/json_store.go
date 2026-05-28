@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"log"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -29,13 +30,16 @@ func NewJSONStore(baseDir string) (*JSONStore, error) {
 	if baseDir == "" {
 		e := conf.GetEnv()
 		if e != nil && e.GetBool(conf.BOT_IS_DEVELOPMENT) {
+			log.Printf("Running in development mode, using local data directory")
 			baseDir = "./data_dev"
 		} else {
+			log.Printf("Running in production mode, using user config directory for data storage")
 			dir, err := os.UserConfigDir()
 			if err != nil {
 				return nil, fmt.Errorf("getting user config dir: %w", err)
 			}
-			baseDir = filepath.Join(dir, "kapelas-go-bot", "data")
+			baseDir = filepath.Join(dir, "kappelas-go-bot", "data")
+			log.Printf("data directory: %s", baseDir)
 		}
 	}
 	if err := os.MkdirAll(baseDir, 0o755); err != nil {

@@ -11,3 +11,4 @@ func ParseInt(s string) (int, error) {
 }
 
 type KappelasMessage = kappelas.Message
+type KappelasCallbackQuery = kappelas.CallbackQuery
