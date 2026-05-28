@@ -6,8 +6,6 @@ import (
 	"net"
 	"os"
 	"path"
-	"strconv"
-	"strings"
 
 	"github.com/joho/godotenv"
 )
@@ -20,8 +18,6 @@ func (e EnvKey) String() string {
 
 const (
 	BOT_TOKEN            EnvKey = "BOT_TOKEN"
-	BOT_OWNER            EnvKey = "BOT_OWNER"
-	BOT_ADMINS           EnvKey = "BOT_ADMINS"
 	BOT_DEBUG            EnvKey = "BOT_DEBUG"
 	BOT_VERSION          EnvKey = "BOT_VERSION"
 	BOT_IS_DEVELOPMENT   EnvKey = "BOT_IS_DEVELOPMENT"
@@ -30,7 +26,8 @@ const (
 	SERVER_HOST          EnvKey = "SERVER_HOST"
 	// Equivalent to the production base url like `https://mybot.com`
 	// On Development you can skip this and focus on the `SERVER_HOST` and `SERVER_PORT` for local testing since the bot will automatically detect if it's in development mode or not and adjust the base url accordingly.
-	SERVER_PATH EnvKey = "SERVER_PATH"
+	SERVER_PATH        EnvKey = "SERVER_PATH"
+	OWNER_ACCESS_TOKEN EnvKey = "OWNER_ACCESS_TOKEN"
 
 	WEBHOOK_BOT_PATH  string = "/webhook/bot"
 	WEBHOOK_USER_PATH string = "/webhook/user"
@@ -38,11 +35,10 @@ const (
 
 type Env struct {
 	botToken         string
-	botOwner         int64
-	botAdmins        []int64
 	botDebug         bool
 	botVersion       string
 	botIsDevelopment bool
+	ownerAccessToken string
 	// treat this as the personal access API key token for automation or personal account management
 	botPlatformAPIKey string
 
@@ -71,23 +67,6 @@ func (e *Env) Load() {
 	if botToken == "" {
 		log.Printf("WARN! %s not set ", BOT_TOKEN)
 	}
-	botOwner, err := strconv.Atoi(os.Getenv(BOT_OWNER.String()))
-	if err != nil {
-		log.Printf("WARN! %s not set or invalid ", BOT_OWNER)
-	}
-	botAdmins := os.Getenv(BOT_ADMINS.String())
-	if botAdmins == "" {
-		log.Printf("WARN! %s not set ", BOT_ADMINS)
-	}
-	var admins []int64
-	for admin := range strings.SplitSeq(botAdmins, ",") {
-		adminID, err := strconv.Atoi(admin)
-		if err != nil {
-			log.Printf("WARN! %s not set or invalid ", BOT_ADMINS)
-			continue
-		}
-		admins = append(admins, int64(adminID))
-	}
 	botPlatformAPIKey := os.Getenv(BOT_PLATFORM_API_KEY.String())
 	if botPlatformAPIKey == "" {
 		log.Printf("WARN! %s not set ", BOT_PLATFORM_API_KEY)
@@ -102,18 +81,19 @@ func (e *Env) Load() {
 	if err != nil {
 		log.Printf("WARN! failed to get outbound IP, defaulting %s to localhost: %s ", SERVER_HOST, err)
 		serverHost = "localhost"
+	} else if serverHost == "" {
+		serverHost = ip.String()
 	}
-	serverHost = ip.String()
 	serverPath := os.Getenv(SERVER_PATH.String())
 	if serverPath == "" {
 		log.Printf("WARN! %s not set", SERVER_PATH)
 	}
+	ownerAccessToken := os.Getenv(OWNER_ACCESS_TOKEN.String())
 	e.botToken = botToken
-	e.botOwner = int64(botOwner)
-	e.botAdmins = admins
 	e.botDebug = os.Getenv(BOT_DEBUG.String()) == "true"
 	e.botVersion = os.Getenv(BOT_VERSION.String())
 	e.botIsDevelopment = os.Getenv(BOT_IS_DEVELOPMENT.String()) == "true"
+	e.ownerAccessToken = ownerAccessToken
 	e.botPlatformAPIKey = botPlatformAPIKey
 	e.serverPort = serverPort
 	e.serverHost = serverHost
@@ -139,22 +119,22 @@ func (e *Env) Get(key EnvKey) any {
 	switch key {
 	case BOT_TOKEN:
 		return e.botToken
-	case BOT_OWNER:
-		return e.botOwner
-	case BOT_ADMINS:
-		return e.botAdmins
 	case BOT_DEBUG:
 		return e.botDebug
 	case BOT_VERSION:
 		return e.botVersion
 	case BOT_IS_DEVELOPMENT:
 		return e.botIsDevelopment
+	case BOT_PLATFORM_API_KEY:
+		return e.botPlatformAPIKey
 	case SERVER_PORT:
 		return e.serverPort
 	case SERVER_HOST:
 		return e.serverHost
 	case SERVER_PATH:
 		return e.serverPath
+	case OWNER_ACCESS_TOKEN:
+		return e.ownerAccessToken
 	default:
 		log.Printf("WARN! %s not found in env ", key)
 		return nil
