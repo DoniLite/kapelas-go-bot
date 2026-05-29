@@ -1,5 +1,7 @@
 github.com/Arnel7/kappelas-sdk-go v0.1.1 h1:IljYMBMWTWZFKRiwR2h8GWYIIScUO1EpKXPmGvIRWW8=
 github.com/Arnel7/kappelas-sdk-go v0.1.1/go.mod h1:IysP5cpk3Tp0FiwH5zXjDohOzaqNe0gsCBwR4YMH/1A=
+github.com/Arnel7/kappelas-sdk-go v0.2.1 h1:UT7rXp/jdoEQW7BGdjvxV/i6Xc3gnTOu+oQb3wijVro=
+github.com/Arnel7/kappelas-sdk-go v0.2.1/go.mod h1:IysP5cpk3Tp0FiwH5zXjDohOzaqNe0gsCBwR4YMH/1A=
 github.com/bytedance/gopkg v0.1.4 h1:oZnQwnX82KAIWb7033bEwtxvTqXcYMxDBaQxo5JJHWM=
 github.com/bytedance/gopkg v0.1.4/go.mod h1:v1zWfPm21Fb+OsyXN2VAHdL6TBb2L88anLQgdyje6R4=
 github.com/bytedance/sonic v1.15.1 h1:nJD5PmM0vY7J8CT6MxoqbVAAMhkSmV2HgRAUrrpLoOw=

@@ -3,7 +3,7 @@ module github.com/DoniLite/kapelas-bot
 go 1.26.3
 
 require (
-	github.com/Arnel7/kappelas-sdk-go v0.1.1
+	github.com/Arnel7/kappelas-sdk-go v0.2.1
 	github.com/gin-gonic/gin v1.12.0
 	github.com/google/uuid v1.6.0
 	github.com/joho/godotenv v1.5.1
